@@ -4,22 +4,42 @@
  * Proprietary and confidential
  */
 
-// var usbScanner = require('usbScanner');
-var usbScanner = require('node-usb-barcode-scanner');
-// var getDevices = require('../usbscanner').getDevices;
+var scanRequest = require('../lib/scanRequest');
+var jsonResponse = require('../lib/jsonResponse');
 
 var app = {
 
     default : function(req, res){
-        res.send("Hi friend. I'm alive.");
+        scanner.reply(res, 200, "Hi friend. I'm alive.");
     }
-
+    
 }
 
 var scanner = {
 
     get : function(req, res){
-        res.send("Hi buddy");
+        
+        // only one request is allowed
+      	if(scanRequest.get()){
+      	  scanner.reply(res, 420, "Wooa. Chill man.");
+      	  return;
+      	}
+      	
+      	scanRequest.add(res);
+      	
+      	req.once('timeout', function () {
+      	  scanRequest.reset();
+          scanner.reply(res, 408, "Timeout");
+        });
+        
+    },
+    
+    reply : function(res, httpCode, msg){
+      jsonResponse
+        .setResponse(res)
+        .setCode(httpCode)
+        .setMsg(msg)
+        .send();
     }
 
 }
