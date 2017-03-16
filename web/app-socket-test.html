@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!--
+  ~ Copyright (C) Contract Services Administration Trust Fund - All Rights Reserved
+  ~ Unauthorized copying of this file, via any medium is strictly prohibited
+  ~ Proprietary and confidential
+  -->
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>App Socket Test</title>
+</head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.7.3/socket.io.js"></script>
+<body>
+<script>
+
+    var socket = io('http://localhost');
+
+    socket.on('barcode', function (code) {
+        console.log("Barcode: "+code);
+    });
+
+</script>
+</body>
+</html>
