@@ -45,9 +45,10 @@ io.on('connection', function(client){
         client.emit('barcode', code);
     });
 
-    // setTimeout(function(){
-    //     client.emit('barcode', 'BLAH');
-    // }, 500);
+    client.on('barcode-received', function(success){
+        if(success)
+            client.disconnect(true);
+    });
 
 });
 
