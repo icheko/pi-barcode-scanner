@@ -14,11 +14,17 @@
 <body>
 <script>
 
-    var socket = io('http://localhost');
+    var socket = io('http://192.168.7.12');
 
     socket.on('barcode', function (code) {
         console.log("Barcode: "+code);
+        socket.emit('barcode-received', true);
     });
+
+
+    function forceDisconnect(){
+        socket.emit('force-disconnect');
+    }
 
 </script>
 </body>
