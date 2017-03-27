@@ -10,9 +10,14 @@ var timeout = require('connect-timeout')
 var scanRequest = require('./lib/scanRequest');
 var usbScanner = require('node-usb-barcode-scanner').usbScanner;
 var getDevices = require('node-usb-barcode-scanner').getDevices;
+var util = require('util');
 
 var app = express();
+var server = require('http').createServer(app);
+var io = require('socket.io')(server);
 var port = 80;
+var scanner;
+var connectedHidDevices;
 
 app.use(timeout('15s'));
 app.use(router);
@@ -28,38 +33,62 @@ function logErrors (err, req, res, next) {
   next(err);
 }
 
-app.listen(port, function(request, response){
+io.on('connection', function(client){
+    
+    // only allow a single connection
+    if(Object.keys(io.sockets.connected).length > 1){
+      console.log('Only one client allowed. Disconnecting client.');
+      client.disconnect(true);
+      return;
+    }
+    
+    var timeout = setTimeout(function(){
+      console.log("Timeout reached. Disconnecting client.");
+      client.disconnect(true);
+    }, 60000);
+  
+    if( util.inspect(scanner.listeners('data')).length == 2 ){
+      
+      scanner.on("data", function(code){
+        console.log();
+        console.log("Activity");
+        console.log("-----------------");
+        console.log("Found Barcode: "+code);
+        io.emit('barcode', code);
+      });
+
+    }
+
+    client.on('barcode-received', function(success){
+        if(success){
+          clearTimeout(timeout);
+          client.disconnect(true);
+          console.log('Barcode received. Disconnecting client.');
+        }
+        
+    });
+    
+    client.on('force-disconnect', function(){
+      clearTimeout(timeout);
+      client.disconnect(true);
+      console.log('Client wished to disconnect.');
+    });
+
+});
+
+server.listen(port, function(request, response){
   
     console.log('Express server listening on port ' + port);
-    
+
     //get array of attached HID devices
-    var connectedHidDevices = getDevices();
-    
+    connectedHidDevices = getDevices();
+
     //print devices
     console.log(connectedHidDevices);
-    
+
     //initialize new usbScanner
-    var scanner = new usbScanner({
+    scanner = new usbScanner({
       vendorId : 4660
     });
-    
-    //scanner emits a data event once a barcode has been read and parsed
-    scanner.on("data", function(code){
-      console.log();
-    	console.log("Activity");
-    	console.log("-----------------");
-      console.log("Found Barcode: "+code);
-      scanRequest.setBarcode(code);
-      scanRequest.respond();
-    });
-    
-    // display scanRequest status
-    setInterval(function() {
-      console.log();
-    	console.log("Activity");
-    	console.log("-----------------");
-    	console.log("Client: "+( scanRequest.get() ? 'Connected' : 'Not connected'));
-    	
-    }, 2000);
     
 });
